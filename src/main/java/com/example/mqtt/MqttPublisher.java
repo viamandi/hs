@@ -34,6 +34,8 @@ public class MqttPublisher {
                     } else {
                         logger.info("Published message to topic {}: {}", Constants.LISTENER_TOPIC_NEW, message);
                     }
+                    System.out.println("Heart beat " + Constants.LISTENER_TOPIC_NEW + ": " + message);
+
                 });
     }
 }
