@@ -7,5 +7,6 @@ public class MqttApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(MqttApplication.class, args);
+		System.out.println("Mqtt Application Started");
 	}
 }

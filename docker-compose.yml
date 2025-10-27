@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # Serviciul pentru compilarea aplicației Spring
+  spring-builder:
+    image: eclipse-temurin:21-jdk
+    container_name: spring-builder
+    working_dir: /app
+    volumes:
+      - ./build-output:/app/target
+    command: >
+      sh -c "
+        apt-get update && apt-get install -y git &&
+        rm -fr ./hs &&
+        git clone https://github.com/viamandi/hs.git &&
+        cd hs &&
+        apt-get --only-upgrade install maven
+        chmod +x ./mvnw &&
+        ./mvnw clean package -DskipTests &&
+        cp target/*.jar /app/target/ &&
+        touch /app/target/build.complete
+      "
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/target/build.complete"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+ # Serviciul pentru aplicația Spring
+  spring-app:
+    image: eclipse-temurin:21-jdk
+    container_name: spring-app
+    working_dir: /app
+    ports:
+      - "8081:8080"  # Schimbă portul dacă aplicația rulează pe alt port
+    volumes:
+      - ./build-output:/app/target
+    command: >
+      sh -c "
+        while [ ! -f /app/target/build.complete ]; do
+          echo 'Waiting for build to complete...'
+          sleep 5
+        done &&
+        echo 'Build complete, starting application...' &&
+        java -jar /app/target/*.jar
+      "
+    networks:
+      - app-network
+    depends_on:
+      spring-builder:
+        condition: service_healthy
+    restart: on-failure
+
+  # Serviciul pentru HiveMQ
+  hivemq:
+    image: hivemq/hivemq-edge
+    container_name: hivemq-edge
+    ports:
+      - "1883:1883"
+      - "8080:8080"
+    networks:
+      - app-network
+    depends_on:
+      spring-app:
+        condition: service_started
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  build-output:
