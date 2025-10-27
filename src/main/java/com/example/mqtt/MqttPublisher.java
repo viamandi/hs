@@ -23,7 +23,7 @@ public class MqttPublisher {
     @Scheduled(fixedRate = 3000) // Publish every 3 seconds
     public void publishMessage() {
         String message = "{\"operation_id\":\"string\", \"vin\":\"string\", \"lo_degree\":\"float\", \"lo_direction\":\"string\", \"la_degree\":\"float\", \"la_direction\":\"string\", \"lastUpdateTimestamp\":\"date\"}";
-
+        System.out.println("QWERTY: Publishing to topic: " + Constants.LISTENER_TOPIC_NEW + " message: " + message);
         mqttClient.publishWith()
                 .topic(Constants.LISTENER_TOPIC_NEW)
                 .payload(message.getBytes(StandardCharsets.UTF_8))

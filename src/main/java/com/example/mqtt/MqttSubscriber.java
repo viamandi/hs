@@ -28,6 +28,7 @@ public class MqttSubscriber {
 
     @PostConstruct
     public void subscribeToTopic() {
+        System.out.println("QWERTY: Subscribing to topic: " + Constants.LISTENER_TOPIC_NEW);
         mqttClient.subscribeWith()
             .topicFilter(Constants.LISTENER_TOPIC_NEW)
             .callback(publish -> {
