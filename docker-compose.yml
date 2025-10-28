@@ -49,8 +49,8 @@ services:
     networks:
       - app-network
     depends_on:
-      spring-builder:
-        condition: service_healthy
+      - hivemq
+      - spring-builder
     restart: on-failure
 
   # Serviciul pentru HiveMQ
@@ -62,9 +62,6 @@ services:
       - "8080:8080"
     networks:
       - app-network
-    depends_on:
-      spring-app:
-        condition: service_started
 
 networks:
   app-network:
