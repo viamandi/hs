@@ -2,6 +2,7 @@ package com.example.mqtt;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import jakarta.annotation.PostConstruct;
@@ -17,7 +18,8 @@ public class MqttSubscriber {
     private static final Logger logger = LoggerFactory.getLogger(MqttSubscriber.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .registerModule(new JavaTimeModule()) // Suport pentru Instant, LocalDateTime etc.
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE); // Map from snake_case to camelCase
     @Autowired
     private Mqtt3AsyncClient mqttClient;
     @Autowired
