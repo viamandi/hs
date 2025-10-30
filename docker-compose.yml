@@ -34,7 +34,7 @@ services:
     container_name: spring-app
     working_dir: /app
     ports:
-      - "8081:8081"  # Schimbă portul dacă aplicația rulează pe alt port
+      - "8090:8090"  # Expose the actual port the Spring app listens on (server.port=8090)
     volumes:
       - ./build-output:/app/target
     command: >
@@ -51,9 +51,9 @@ services:
     depends_on:
       spring-builder:
         condition: service_completed_successfully
-      hivemq:
-        condition: service_healthy
       postgres:
+        condition: service_healthy
+      hivemq:
         condition: service_healthy
     restart: on-failure
 
