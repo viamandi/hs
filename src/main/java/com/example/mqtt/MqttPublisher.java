@@ -1,5 +1,9 @@
 package com.example.mqtt;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,36 +21,43 @@ import java.util.UUID;
 public class MqttPublisher {
 
     private static final Logger logger = LoggerFactory.getLogger(MqttPublisher.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
-    String new_listener_schema = "";
     @Autowired
     private Mqtt3AsyncClient mqttClient;
 
     @Scheduled(fixedRate = 3000) // Publish every 3 seconds
     public void publishMessage() {
-        String message = String.format("""
-                {
-                  "operation_id": "%s",
-                  "vin": "VIN-%s",
-                  "lo_degree": 12.34,
-                  "lo_direction": "E",
-                  "la_degree": 56.78,
-                  "la_direction": "N",
-                  "lastUpdateTimestamp": "%s"
-                }""", UUID.randomUUID(), UUID.randomUUID().toString().substring(0, 8), Instant.now());
-        System.out.println("QWERTY: Publishing to topic: " + Constants.LISTENER_TOPIC_NEW + " message: " + message);
-        mqttClient.publishWith()
-                .topic(Constants.LISTENER_TOPIC_NEW)
-                .payload(message.getBytes(StandardCharsets.UTF_8))
-                .send()
-                .whenComplete((publish, throwable) -> {
-                    if (throwable != null) {
-                        logger.error("Error publishing message to topic {}: {}", Constants.LISTENER_TOPIC_NEW, throwable.getMessage());
-                    } else {
-                        logger.info("Published message to topic {}: {}", Constants.LISTENER_TOPIC_NEW, message);
-                    }
-                    System.out.println("Heart beat " + Constants.LISTENER_TOPIC_NEW + ": " + message);
+        // Create a VehicleData object to be serialized
+        VehicleData data = new VehicleData();
+        data.setOperationId(UUID.randomUUID().toString());
+        data.setVin("VIN-" + UUID.randomUUID().toString().substring(0, 8));
+        data.setLoDegree(12.34f);
+        data.setLoDirection("E");
+        data.setLaDegree(56.78f);
+        data.setLaDirection("N");
+        data.setLastUpdateTimestamp(Instant.now());
 
-                });
+        try {
+            // Serialize the object to a JSON string
+            String message = OBJECT_MAPPER.writeValueAsString(data);
+
+            logger.info("Publishing to topic {}: {}", Constants.LISTENER_TOPIC_NEW, message);
+            mqttClient.publishWith()
+                    .topic(Constants.LISTENER_TOPIC_NEW)
+                    .payload(message.getBytes(StandardCharsets.UTF_8))
+                    .send()
+                    .whenComplete((publish, throwable) -> {
+                        if (throwable != null) {
+                            logger.error("Error publishing message to topic {}: {}", Constants.LISTENER_TOPIC_NEW, throwable.getMessage());
+                        } else {
+                            logger.debug("Successfully published message to topic {}", Constants.LISTENER_TOPIC_NEW);
+                        }
+                    });
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to serialize VehicleData object to JSON", e);
+        }
     }
 }
