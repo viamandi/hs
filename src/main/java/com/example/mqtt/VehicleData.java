@@ -89,4 +89,18 @@ public class VehicleData {
     public void setLastUpdateTimestamp(Instant lastUpdateTimestamp) {
         this.lastUpdateTimestamp = lastUpdateTimestamp;
     }
+
+    @Override
+    public String toString() {
+        return "VehicleData{" +
+                "id=" + id +
+                ", operationId='" + operationId + '\'' +
+                ", vin='" + vin + '\'' +
+                ", loDegree=" + loDegree +
+                ", loDirection='" + loDirection + '\'' +
+                ", laDegree=" + laDegree +
+                ", laDirection='" + laDirection + '\'' +
+                ", lastUpdateTimestamp=" + lastUpdateTimestamp +
+                '}';
+    }
 }

@@ -52,6 +52,12 @@ public class MqttSubscriber {
             // Save the entity to the database
             VehicleData savedData = vehicleDataRepository.save(data);
             logger.info("Saved vehicle data to DB with ID: {}", savedData.getId());
+
+            // Read the data back from the DB to verify it was written correctly
+            vehicleDataRepository.findById(savedData.getId()).ifPresent(readData -> {
+                logger.info("Verification read from DB: {}", readData);
+            });
+
         } catch (IOException e) {
             logger.error("Failed to parse and save message: {}", message, e);
         }
