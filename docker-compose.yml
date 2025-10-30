@@ -10,20 +10,20 @@ services:
       - ./build-output:/app/target
     command: >
       sh -c "
+        rm -fr /app/target/* &&
         apt-get update && apt-get install -y git &&
         rm -fr ./hs &&
         git clone https://github.com/viamandi/hs.git &&
         cd hs &&
-        apt-get --only-upgrade install maven
+        apt-get --only-upgrade install maven &&
         chmod +x ./mvnw &&
         ./mvnw clean package -DskipTests &&
-        cp target/*.jar /app/target/ &&
-        touch /app/target/build.complete
+        cp target/*.jar /app/target/
       "
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "test", "-f", "/app/target/build.complete"]
+      test: ["CMD", "test", "-f", "/app/target/*.jar"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,7 +39,7 @@ services:
       - ./build-output:/app/target
     command: >
       sh -c "
-        while [ ! -f /app/target/build.complete ]; do
+        while [ ! -f /app/target/*.jar ]; do
           echo 'Waiting for build to complete...'
           sleep 5
         done &&
