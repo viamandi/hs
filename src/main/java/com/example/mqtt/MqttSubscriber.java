@@ -1,30 +1,27 @@
 package com.example.mqtt;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
 
 @Service
 public class MqttSubscriber {
 
     private static final Logger logger = LoggerFactory.getLogger(MqttSubscriber.class);
-
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule()) // Suport pentru Instant, LocalDateTime etc.
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     @Autowired
     private Mqtt3AsyncClient mqttClient;
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    @Autowired
+    private VehicleDataRepository vehicleDataRepository;
 
     @PostConstruct
     public void subscribeToTopic() {
@@ -46,48 +43,15 @@ public class MqttSubscriber {
             });
     }
 
-    void handleMessage(String message) {
-        // Parse JSON into a list of string-pair objects (key -> string value)
-        List<Map.Entry<String, String>> pairs = parseMessageToStringPairs(message);
-
-        // Example: log pairs (or forward them to other services)
-        for (Map.Entry<String, String> p : pairs) {
-            logger.info("field='{}' value='{}'", p.getKey(), p.getValue());
-        }
-
-        // Implement further message handling here
-    }
-
-    /**
-     * Parse a JSON object string into a list of string pairs (field name -> stringified value).
-     * Expected JSON shape:
-     * {
-     *   "vin":"string",
-     *   "lo_degree":float,
-     *   "lo_direction":"string",
-     *   "la_degree":float,
-     *   "la_direction":"string",
-     *   "lastUpdateTimestamp":"date"
-     * }
-     */
-    private List<Map.Entry<String, String>> parseMessageToStringPairs(String message) {
+    private void handleMessage(String message) {
         try {
-            JsonNode root = OBJECT_MAPPER.readTree(message);
-            if (!root.isObject()) {
-                logger.warn("Expected JSON object but got: {}", root.getNodeType());
-                return Collections.emptyList();
-            }
-
-            List<Map.Entry<String, String>> list = new ArrayList<>();
-            root.fieldNames().forEachRemaining(name -> {
-                JsonNode valueNode = root.get(name);
-                String value = valueNode == null || valueNode.isNull() ? null : valueNode.asText();
-                list.add(new AbstractMap.SimpleEntry<>(name, value));
-            });
-            return list;
-        } catch (Exception e) {
-            logger.error("Failed to parse message as JSON: {}", e.getMessage());
-            return Collections.emptyList();
+            // Map JSON to our VehicleData entity
+            VehicleData data = OBJECT_MAPPER.readValue(message, VehicleData.class);
+            // Save the entity to the database
+            VehicleData savedData = vehicleDataRepository.save(data);
+            logger.info("Saved vehicle data to DB with ID: {}", savedData.getId());
+        } catch (IOException e) {
+            logger.error("Failed to parse and save message: {}", message, e);
         }
     }
 }

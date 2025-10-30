@@ -49,17 +49,46 @@ services:
     networks:
       - app-network
     depends_on:
-      - hivemq
-      - spring-builder
+      spring-builder:
+        condition: service_completed_successfully
+      hivemq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     restart: on-failure
 
-  # Serviciul pentru HiveMQ
+  # Serviciul pentru baza de date PostgreSQL
+  postgres:
+    image: postgres:16
+    container_name: postgres-db
+    environment:
+      - POSTGRES_DB=vehicle_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d vehicle_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Serviciul pentru HiveMQ (fără modificări)
   hivemq:
     image: hivemq/hivemq-edge
     container_name: hivemq-edge1
     ports:
       - "1883:1883"
       - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/api/v1/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
@@ -69,3 +98,4 @@ networks:
 
 volumes:
   build-output:
+  postgres-data:
