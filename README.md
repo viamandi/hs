@@ -6,8 +6,12 @@ It contains docker yml to launch images for:
 - Spring App application
 - PostgreSQL to save the data from the message
 
-Precondition:
-- install docker
 
 Run:
-- docker-compose -up
+  - Precondition:
+    - install docker
+  - docker-compose -up
+
+File structure
+  - project directory
+  - docker setup is located in root project directory
