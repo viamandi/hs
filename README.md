@@ -5,3 +5,9 @@ It contains docker yml to launch images for:
 - MQTT broker: HiveMQ
 - Spring App application
 - PostgreSQL to save the data from the message
+
+Precondition:
+- install docker
+
+Run:
+- docker-compose -up
